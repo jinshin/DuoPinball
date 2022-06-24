@@ -2,15 +2,7 @@ import serial.tools.list_ports
 from serial import Serial
 from serial.threaded import ReaderThread, Protocol
 from pynput.keyboard import Key, Controller
-
-class SerialReaderProtocol(Protocol):
-    def connection_made(self, transport):
-        print("Connected, ready to receive data.")
-    def data_received(self, data):
-        print(len(data))
-        print(data)
-    def connection_lost(self, exc):
-        print("Connection Lost!")
+import vgamepad as vg
 
 DuoPort = ""
 
@@ -24,10 +16,10 @@ if DuoPort == "":
     print("No DuoPinball device found. Exiting.")    
     exit()
 
-print("Connecting to",DuoPort)
+print("Connecting to",DuoPort,"...")
 try:
-    DuoCom = serial.Serial(DuoPort, baudrate=9600, timeout=None, bytesize=8, parity='N', stopbits=1, xonxoff=False, rtscts=False, dsrdtr=False)
-    print(DuoCom)
+    DuoCom = serial.Serial(DuoPort, baudrate=9600, timeout=5*57)
+    print("Connected. Have fun!")
 except:
     print("Can't connect. Exiting.")
     exit()
@@ -54,18 +46,46 @@ PrevRightFlipperState = 0
 
 keyboard = Controller()
 
+try:
+    gamepad = vg.VX360Gamepad()
+except:
+    print("Install ViGEmBus if you plan to emulate X360 gamepad")
+    gamepad = 0   
+
 LeftFlipper = "z"
 #LeftFlipper = Key.shift_r
+
+LeftFlipperG = vg.XUSB_BUTTON.XUSB_GAMEPAD_LEFT_SHOULDER
 
 RightFlipper = "/"
 #RightFlipper = Key.shift_r
 
+RightFlipperG = vg.XUSB_BUTTON.XUSB_GAMEPAD_RIGHT_SHOULDER
+
 Plunger = Key.space
 #Plunger = Key.enter
 
-while True:
+PlungerG = vg.XUSB_BUTTON.XUSB_GAMEPAD_A
+
+while True: 
     data=DuoCom.read(6)
     #print(hex(data[0]),hex(data[1]),hex(data[2]),hex(data[3]),hex(data[4]))
+    #print(len(data))
+    if (len(data) == 0):
+        input("Press any button on controller and press Enter to reconnect.")
+        try:
+            DuoCom.close()
+            print("Connecting...")
+            DuoCom = serial.Serial(DuoPort, baudrate=9600, timeout=5*57)
+            print("Connected.")
+            data=DuoCom.read(6)
+            #Well here's a possible problem, will throw an exeption
+            #if no key is pressed after new connect
+            #but why would that happen?
+        except:
+            print("Can't connect. Exiting.")
+            exit()
+        
     cs=(data[0]+data[1]+data[2]+data[3]+data[4]+1)&0xFF
     if cs != data[5]:
         print("Ignoring, incorrect checksum.")
@@ -75,31 +95,56 @@ while True:
         #Flipper action    
             if FlipperState != data[3]:
                 FlipperState=data[3]
+                
                 LeftFlipperState=FlipperState&1
                 RightFlipperState=FlipperState>>1&1
+                
                 if LeftFlipperState != PrevLeftFlipperState:
                     PrevLeftFlipperState = LeftFlipperState
                     if LeftFlipperState:
-                        keyboard.press(LeftFlipper)              
+                        keyboard.press(LeftFlipper)
+                        if gamepad:
+                            gamepad.press_button(LeftFlipperG)
+                            gamepad.update()
                     else:
                         keyboard.release(LeftFlipper)
+                        if gamepad:
+                            gamepad.release_button(LeftFlipperG)
+                            gamepad.update()
+                
                 if RightFlipperState != PrevRightFlipperState:
                     PrevRightFlipperState = RightFlipperState
                     if RightFlipperState:
-                        keyboard.press(RightFlipper)              
+                        keyboard.press(RightFlipper)
+                        if gamepad:
+                            gamepad.press_button(RightFlipperG)
+                            gamepad.update()
                     else:
                         keyboard.release(RightFlipper)
+                        if gamepad:
+                            gamepad.release_button(RightFlipperG)
+                            gamepad.update()
+                            
             #print(FlipperState,LeftFlipperState,RightFlipperState)  
     
         if data[2] == 2:
         #Plunger action
             PlungerPos = data [3]
+            if gamepad:
+                gamepad.right_joystick_float(0,0-float(PlungerPos)/63)
+                gamepad.update() 
             if PlungerState == 0:
             #Start moving    
                 PlungerState = 1
                 keyboard.press(Plunger)
+                if gamepad:
+                    gamepad.press_button(PlungerG)
+                    gamepad.update()
             else:
                 if data[4]&0xFF == 0xFF:
                     PlungerState = 0                    
                     keyboard.release(Plunger)
+                    if gamepad:
+                        gamepad.release_button(PlungerG)
+                        gamepad.update()
 DuoCom.close()
