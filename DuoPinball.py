@@ -1,9 +1,14 @@
+#Python DuoPinball controller driver for Windows PC
+#Idea and some code taken from https://csdprojects.co.uk/winapps
+#I had no idea it's a simply COM port :)
+
 import serial.tools.list_ports
 from serial import Serial
 from pynput.keyboard import Key, Controller
 import vgamepad as vg
 
 #Config part start
+#Keyboard emulation
 EmulateKeyboard = True
 LeftFlipper = "z"
 #LeftFlipper = Key.shift_r
@@ -12,6 +17,10 @@ RightFlipper = "/"
 Plunger = Key.space
 #Plunger = Key.enter
 
+#Gamepad emulation
+#You need ViGEmBus for that
+#Right stick down hardcoded to fine control plunger movement.
+#Works ok
 EmulateGamepad = True
 LeftFlipperG = vg.XUSB_BUTTON.XUSB_GAMEPAD_LEFT_SHOULDER
 RightFlipperG = vg.XUSB_BUTTON.XUSB_GAMEPAD_RIGHT_SHOULDER
