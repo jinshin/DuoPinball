@@ -1,8 +1,22 @@
 import serial.tools.list_ports
 from serial import Serial
-from serial.threaded import ReaderThread, Protocol
 from pynput.keyboard import Key, Controller
 import vgamepad as vg
+
+#Config part start
+EmulateKeyboard = True
+LeftFlipper = "z"
+#LeftFlipper = Key.shift_r
+RightFlipper = "/"
+#RightFlipper = Key.shift_r
+Plunger = Key.space
+#Plunger = Key.enter
+
+EmulateGamepad = True
+LeftFlipperG = vg.XUSB_BUTTON.XUSB_GAMEPAD_LEFT_SHOULDER
+RightFlipperG = vg.XUSB_BUTTON.XUSB_GAMEPAD_RIGHT_SHOULDER
+PlungerG = vg.XUSB_BUTTON.XUSB_GAMEPAD_A
+#Config part end
 
 DuoPort = ""
 
@@ -23,9 +37,6 @@ try:
 except:
     print("Can't connect. Exiting.")
     exit()
-
-#reader = ReaderThread(DuoCom, SerialReaderProtocol)
-#reader.start()
     
 #Packet structure
 #1st and 2nd byte: "0x5A 0xA5" - signature 
@@ -44,28 +55,17 @@ RightFlipperState = 0
 PrevLeftFlipperState = 0
 PrevRightFlipperState = 0
 
-keyboard = Controller()
+if EmulateKeyboard:
+    keyboard = Controller()
+else:
+    keyboard = 0
 
-try:
-    gamepad = vg.VX360Gamepad()
-except:
-    print("Install ViGEmBus if you plan to emulate X360 gamepad")
-    gamepad = 0   
-
-LeftFlipper = "z"
-#LeftFlipper = Key.shift_r
-
-LeftFlipperG = vg.XUSB_BUTTON.XUSB_GAMEPAD_LEFT_SHOULDER
-
-RightFlipper = "/"
-#RightFlipper = Key.shift_r
-
-RightFlipperG = vg.XUSB_BUTTON.XUSB_GAMEPAD_RIGHT_SHOULDER
-
-Plunger = Key.space
-#Plunger = Key.enter
-
-PlungerG = vg.XUSB_BUTTON.XUSB_GAMEPAD_A
+if EmulateGamepad:
+    try:
+        gamepad = vg.VX360Gamepad()
+    except:
+        print("Install ViGEmBus if you plan to emulate X360 gamepad")
+        gamepad = 0   
 
 while True: 
     data=DuoCom.read(6)
@@ -102,12 +102,14 @@ while True:
                 if LeftFlipperState != PrevLeftFlipperState:
                     PrevLeftFlipperState = LeftFlipperState
                     if LeftFlipperState:
-                        keyboard.press(LeftFlipper)
+                        if keyboard:
+                            keyboard.press(LeftFlipper)
                         if gamepad:
                             gamepad.press_button(LeftFlipperG)
                             gamepad.update()
                     else:
-                        keyboard.release(LeftFlipper)
+                        if keyboard:
+                            keyboard.release(LeftFlipper)
                         if gamepad:
                             gamepad.release_button(LeftFlipperG)
                             gamepad.update()
@@ -115,12 +117,14 @@ while True:
                 if RightFlipperState != PrevRightFlipperState:
                     PrevRightFlipperState = RightFlipperState
                     if RightFlipperState:
-                        keyboard.press(RightFlipper)
+                        if keyboard:
+                            keyboard.press(RightFlipper)
                         if gamepad:
                             gamepad.press_button(RightFlipperG)
                             gamepad.update()
                     else:
-                        keyboard.release(RightFlipper)
+                        if keyboard:
+                            keyboard.release(RightFlipper)
                         if gamepad:
                             gamepad.release_button(RightFlipperG)
                             gamepad.update()
@@ -136,14 +140,16 @@ while True:
             if PlungerState == 0:
             #Start moving    
                 PlungerState = 1
-                keyboard.press(Plunger)
+                if keyboard:
+                    keyboard.press(Plunger)
                 if gamepad:
                     gamepad.press_button(PlungerG)
                     gamepad.update()
             else:
                 if data[4]&0xFF == 0xFF:
                     PlungerState = 0                    
-                    keyboard.release(Plunger)
+                    if keyboard:
+                        keyboard.release(Plunger)
                     if gamepad:
                         gamepad.release_button(PlungerG)
                         gamepad.update()
