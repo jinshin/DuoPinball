@@ -47,7 +47,21 @@ FlipperState = 0
 PlungerState = 0
 PlungerPos = 0
 
+LeftFlipperState = 0
+RightFlipperState = 0
+PrevLeftFlipperState = 0
+PrevRightFlipperState = 0
+
 keyboard = Controller()
+
+LeftFlipper = "z"
+#LeftFlipper = Key.shift_r
+
+RightFlipper = "/"
+#RightFlipper = Key.shift_r
+
+Plunger = Key.space
+#Plunger = Key.enter
 
 while True:
     data=DuoCom.read(6)
@@ -61,14 +75,21 @@ while True:
         #Flipper action    
             if FlipperState != data[3]:
                 FlipperState=data[3]
-                if (FlipperState&1):
-                    keyboard.press(Key.shift_l)      
-                else:
-                    keyboard.release(Key.shift_l)      
-                if (FlipperState&2):
-                    keyboard.press(Key.shift_r)     
-                else:
-                    keyboard.release(Key.shift_r)
+                LeftFlipperState=FlipperState&1
+                RightFlipperState=FlipperState>>1&1
+                if LeftFlipperState != PrevLeftFlipperState:
+                    PrevLeftFlipperState = LeftFlipperState
+                    if LeftFlipperState:
+                        keyboard.press(LeftFlipper)              
+                    else:
+                        keyboard.release(LeftFlipper)
+                if RightFlipperState != PrevRightFlipperState:
+                    PrevRightFlipperState = RightFlipperState
+                    if RightFlipperState:
+                        keyboard.press(RightFlipper)              
+                    else:
+                        keyboard.release(RightFlipper)
+            #print(FlipperState,LeftFlipperState,RightFlipperState)  
     
         if data[2] == 2:
         #Plunger action
@@ -76,9 +97,9 @@ while True:
             if PlungerState == 0:
             #Start moving    
                 PlungerState = 1
-                keyboard.press(Key.enter)
+                keyboard.press(Plunger)
             else:
                 if data[4]&0xFF == 0xFF:
                     PlungerState = 0                    
-                    keyboard.release(Key.enter)
+                    keyboard.release(Plunger)
 DuoCom.close()
