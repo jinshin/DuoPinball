@@ -25,6 +25,8 @@ EmulateGamepad = True
 LeftFlipperG = vg.XUSB_BUTTON.XUSB_GAMEPAD_LEFT_SHOULDER
 RightFlipperG = vg.XUSB_BUTTON.XUSB_GAMEPAD_RIGHT_SHOULDER
 PlungerG = vg.XUSB_BUTTON.XUSB_GAMEPAD_A
+#Alternate Plunger movement detection
+AltPos = True
 #Config part end
 
 DuoPort = ""
@@ -142,9 +144,17 @@ while True:
     
         if data[2] == 2:
         #Plunger action
-            PlungerPos = data [3]
+            if not AltPos:
+                PlungerPos = data[3]
+            else:
+                PlungerPos = data[4]-24
+                if PlungerPos < 0:
+                    PlungerPos = 0    
             if gamepad:
-                gamepad.right_joystick_float(0,0-float(PlungerPos)/63)
+                if not AltPos:
+                    gamepad.right_joystick_float(0,0-float(PlungerPos)/63)
+                else:
+                    gamepad.right_joystick_float(0,-1+float(PlungerPos)/256)
                 gamepad.update() 
             if PlungerState == 0:
             #Start moving    
@@ -154,12 +164,13 @@ while True:
                 if gamepad:
                     gamepad.press_button(PlungerG)
                     gamepad.update()
-            else:
-                if data[4]&0xFF == 0xFF:
-                    PlungerState = 0                    
-                    if keyboard:
-                        keyboard.release(Plunger)
-                    if gamepad:
-                        gamepad.release_button(PlungerG)
-                        gamepad.update()
+            if data[4]&0xFF == 0xFF:
+                PlungerState = 0                    
+                if keyboard:
+                    keyboard.release(Plunger)
+                if gamepad:
+                    gamepad.release_button(PlungerG)
+                    if AltPos:
+                        gamepad.right_joystick_float(0,0)
+                    gamepad.update()
 DuoCom.close()
