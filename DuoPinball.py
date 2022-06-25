@@ -99,9 +99,13 @@ while True:
         
     cs=(data[0]+data[1]+data[2]+data[3]+data[4]+1)&0xFF
     if cs != data[5]:
-        print("Ignoring, incorrect checksum.")
+        print("Ignoring data, incorrect checksum.")
+        DuoCom.close()
+        print("Reconnecting...")
+        DuoCom = serial.Serial(DuoPort, baudrate=9600, timeout=5*57)
+        print("Connected.")
+        data=DuoCom.read(6)
     else:
-
         if data[2] == 1:
         #Flipper action    
             if FlipperState != data[3]:
@@ -145,16 +149,14 @@ while True:
         if data[2] == 2:
         #Plunger action
             if not AltPos:
-                PlungerPos = data[3]
-            else:
-                PlungerPos = data[4]-24
-                if PlungerPos < 0:
-                    PlungerPos = 0    
+                PlungerPos = 0 - float(data[3])/60
+            else:      
+                PlungerPos = -1 + float(data[4]-28)/256                         
+                if PlungerPos < -1:
+                    PlungerPos = -1
+            print(PlungerPos,data[3],data[4])        
             if gamepad:
-                if not AltPos:
-                    gamepad.right_joystick_float(0,0-float(PlungerPos)/63)
-                else:
-                    gamepad.right_joystick_float(0,-1+float(PlungerPos)/256)
+                gamepad.right_joystick_float(0,PlungerPos)
                 gamepad.update() 
             if PlungerState == 0:
             #Start moving    
@@ -165,12 +167,13 @@ while True:
                     gamepad.press_button(PlungerG)
                     gamepad.update()
             if data[4]&0xFF == 0xFF:
-                PlungerState = 0                    
+                PlungerState = 0
+                PlungerPos = 0
                 if keyboard:
                     keyboard.release(Plunger)
                 if gamepad:
                     gamepad.release_button(PlungerG)
                     if AltPos:
-                        gamepad.right_joystick_float(0,0)
+                        gamepad.right_joystick_float(0,PlungerPos)
                     gamepad.update()
 DuoCom.close()
