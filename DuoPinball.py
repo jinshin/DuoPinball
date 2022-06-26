@@ -152,9 +152,9 @@ while True:
                 PlungerPos = 0 - float(data[3])/60
             else:      
                 PlungerPos = -1 + float(data[4]-28)/256                         
-                if PlungerPos < -1:
-                    PlungerPos = -1
-            print(PlungerPos,data[3],data[4])        
+            if PlungerPos < -1:
+                PlungerPos = -1
+            #print(PlungerPos,data[3],data[4])        
             if gamepad:
                 gamepad.right_joystick_float(0,PlungerPos)
                 gamepad.update() 
@@ -173,7 +173,6 @@ while True:
                     keyboard.release(Plunger)
                 if gamepad:
                     gamepad.release_button(PlungerG)
-                    if AltPos:
-                        gamepad.right_joystick_float(0,PlungerPos)
+                    gamepad.right_joystick_float(0,PlungerPos)
                     gamepad.update()
 DuoCom.close()
